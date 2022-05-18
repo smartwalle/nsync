@@ -1,3 +1,3 @@
-module github.com/smartwalle/sync4go
+module github.com/smartwalle/nsync
 
 go 1.17
