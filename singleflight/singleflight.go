@@ -14,7 +14,8 @@ limitations under the License.
 // Package singleflight provides a duplicate function call suppression
 // mechanism.
 //
-// Reference: github.com/golang/groupcache/singleflight
+// This is a fork of https://github.com/golang/groupcache/blob/master/singleflight/singleflight.go written in a
+// more extendable way
 package singleflight
 
 import (
@@ -23,51 +24,51 @@ import (
 )
 
 type call struct {
-	wg    sync.WaitGroup
-	val   interface{}
+	w     sync.WaitGroup
+	value interface{}
 	err   error
 	valid bool
 }
 
-func NewGroup() *Group {
-	return &Group{}
+func New() *Group {
+	var nGroup = &Group{}
+	nGroup.mu = &sync.Mutex{}
+	nGroup.calls = make(map[string]*call)
+	return nGroup
 }
 
 type Group struct {
-	mu    sync.Mutex
+	mu    *sync.Mutex
 	calls map[string]*call
 }
 
 func (this *Group) Do(key string, fn func(key string) (interface{}, error)) (interface{}, error) {
 	this.mu.Lock()
-	if this.calls == nil {
-		this.calls = make(map[string]*call)
-	}
 
 	if c, ok := this.calls[key]; ok {
 		this.mu.Unlock()
-		c.wg.Wait()
+		c.w.Wait()
 
 		if err, ok := c.err.(*stackError); ok {
 			panic(err)
 		}
-		return c.val, c.err
+		return c.value, c.err
 	}
 
 	var c = &call{}
 	c.valid = true
-	c.wg.Add(1)
+	c.w.Add(1)
 	this.calls[key] = c
 	this.mu.Unlock()
 
 	this.do(key, c, fn)
 
-	return c.val, c.err
+	return c.value, c.err
 }
 
 func (this *Group) do(key string, c *call, fn func(key string) (interface{}, error)) {
 	defer func() {
-		c.wg.Done()
+		c.w.Done()
 
 		this.mu.Lock()
 		if c.valid {
@@ -86,7 +87,7 @@ func (this *Group) do(key string, c *call, fn func(key string) (interface{}, err
 		}
 	}()
 
-	c.val, c.err = fn(key)
+	c.value, c.err = fn(key)
 }
 
 func (this *Group) Forget(key string) {
