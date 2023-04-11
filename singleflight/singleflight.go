@@ -29,7 +29,11 @@ type call struct {
 	valid bool
 }
 
-func New[K Key]() Group[K] {
+func New() Group[string] {
+	return NewGroup[string]()
+}
+
+func NewGroup[K Key]() Group[K] {
 	var nGroup = &group[K]{}
 	nGroup.calls = make(map[K]*call)
 	return nGroup

@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	var g1 = singleflight.New[string]()
+	var g1 = singleflight.New()
 
 	go func() {
 		fmt.Println("Goroutine---1")
