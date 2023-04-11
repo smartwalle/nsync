@@ -7,30 +7,30 @@ import (
 )
 
 func main() {
-	var g1 = singleflight.New()
+	var g1 = singleflight.New[string]()
 
 	go func() {
-		fmt.Println(1)
+		fmt.Println("Goroutine---1")
 		var v, _ = g1.Do("k1", func(key string) (interface{}, error) {
-			fmt.Println("begin1")
+			fmt.Println("Goroutine---1: begin")
 			time.Sleep(time.Second * 2)
-			fmt.Println("end1")
+			fmt.Println("Goroutine---1: end")
 			return "v1", nil
 		})
-		fmt.Println(v)
+		fmt.Println("Goroutine---1 结果:", v)
 	}()
 
 	var g2 = g1
 
 	go func() {
-		fmt.Println(2)
+		fmt.Println("Goroutine---2")
 		var v, _ = g2.Do("k1", func(key string) (interface{}, error) {
-			fmt.Println("begin2")
+			fmt.Println("Goroutine---2: begin")
 			time.Sleep(time.Second * 2)
-			fmt.Println("end2")
+			fmt.Println("Goroutine---2: end")
 			return "v2", nil
 		})
-		fmt.Println(v)
+		fmt.Println("Goroutine---2 结果:", v)
 	}()
 
 	select {

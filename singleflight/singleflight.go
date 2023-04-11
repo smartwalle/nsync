@@ -29,18 +29,18 @@ type call struct {
 	valid bool
 }
 
-func New() Group {
-	var nGroup = &group{}
-	nGroup.calls = make(map[string]*call)
+func New[K Key]() Group[K] {
+	var nGroup = &group[K]{}
+	nGroup.calls = make(map[K]*call)
 	return nGroup
 }
 
-type group struct {
+type group[K Key] struct {
 	mu    sync.Mutex
-	calls map[string]*call
+	calls map[K]*call
 }
 
-func (this *group) Do(key string, fn func(key string) (interface{}, error)) (interface{}, error) {
+func (this *group[K]) Do(key K, fn func(key K) (interface{}, error)) (interface{}, error) {
 	this.mu.Lock()
 
 	if c, ok := this.calls[key]; ok {
@@ -64,7 +64,7 @@ func (this *group) Do(key string, fn func(key string) (interface{}, error)) (int
 	return c.value, c.err
 }
 
-func (this *group) do(key string, c *call, fn func(key string) (interface{}, error)) {
+func (this *group[K]) do(key K, c *call, fn func(key K) (interface{}, error)) {
 	defer func() {
 		c.w.Done()
 
@@ -88,7 +88,7 @@ func (this *group) do(key string, c *call, fn func(key string) (interface{}, err
 	c.value, c.err = fn(key)
 }
 
-func (this *group) Forget(key string) {
+func (this *group[K]) Forget(key K) {
 	this.mu.Lock()
 	if c, ok := this.calls[key]; ok {
 		c.valid = false
