@@ -11,10 +11,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package singleflight provides a duplicate function call suppression
-// mechanism.
-//
 // This is a fork of https://github.com/golang/groupcache/blob/master/singleflight/singleflight.go
+
 package singleflight
 
 import (
