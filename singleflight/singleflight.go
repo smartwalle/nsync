@@ -20,29 +20,29 @@ import (
 	"sync"
 )
 
-type call struct {
+type call[T any] struct {
 	w     sync.WaitGroup
-	value interface{}
+	value T
 	err   error
 	valid bool
 }
 
-func New() Group[string] {
-	return NewGroup[string]()
+func New[V any]() Group[string, V] {
+	return NewGroup[string, V]()
 }
 
-func NewGroup[K Key]() Group[K] {
-	var nGroup = &group[K]{}
-	nGroup.calls = make(map[K]*call)
+func NewGroup[K Key, V any]() Group[K, V] {
+	var nGroup = &group[K, V]{}
+	nGroup.calls = make(map[K]*call[V])
 	return nGroup
 }
 
-type group[K Key] struct {
+type group[K Key, V any] struct {
 	mu    sync.Mutex
-	calls map[K]*call
+	calls map[K]*call[V]
 }
 
-func (this *group[K]) Do(key K, fn func(key K) (interface{}, error)) (interface{}, error) {
+func (this *group[K, V]) Do(key K, fn func(key K) (V, error)) (V, error) {
 	this.mu.Lock()
 
 	if c, ok := this.calls[key]; ok {
@@ -55,7 +55,7 @@ func (this *group[K]) Do(key K, fn func(key K) (interface{}, error)) (interface{
 		return c.value, c.err
 	}
 
-	var c = &call{}
+	var c = &call[V]{}
 	c.valid = true
 	c.w.Add(1)
 	this.calls[key] = c
@@ -66,7 +66,7 @@ func (this *group[K]) Do(key K, fn func(key K) (interface{}, error)) (interface{
 	return c.value, c.err
 }
 
-func (this *group[K]) do(key K, c *call, fn func(key K) (interface{}, error)) {
+func (this *group[K, V]) do(key K, c *call[V], fn func(key K) (V, error)) {
 	defer func() {
 		c.w.Done()
 
@@ -90,7 +90,7 @@ func (this *group[K]) do(key K, c *call, fn func(key K) (interface{}, error)) {
 	c.value, c.err = fn(key)
 }
 
-func (this *group[K]) Forget(key K) {
+func (this *group[K, V]) Forget(key K) {
 	this.mu.Lock()
 	if c, ok := this.calls[key]; ok {
 		c.valid = false

@@ -7,11 +7,11 @@ import (
 )
 
 func main() {
-	var g1 = singleflight.New()
+	var g1 = singleflight.New[string]()
 
 	go func() {
 		fmt.Println("Goroutine---1")
-		var v, _ = g1.Do("k1", func(key string) (interface{}, error) {
+		var v, _ = g1.Do("k1", func(key string) (string, error) {
 			fmt.Println("Goroutine---1: begin")
 			time.Sleep(time.Second * 2)
 			fmt.Println("Goroutine---1: end")
@@ -24,7 +24,7 @@ func main() {
 
 	go func() {
 		fmt.Println("Goroutine---2")
-		var v, _ = g2.Do("k1", func(key string) (interface{}, error) {
+		var v, _ = g2.Do("k1", func(key string) (string, error) {
 			fmt.Println("Goroutine---2: begin")
 			time.Sleep(time.Second * 2)
 			fmt.Println("Goroutine---2: end")
