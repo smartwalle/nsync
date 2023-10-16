@@ -42,11 +42,11 @@ type group[K Key, V any] struct {
 	calls map[K]*call[V]
 }
 
-func (this *group[K, V]) Do(key K, fn func(key K) (V, error)) (V, error) {
-	this.mu.Lock()
+func (g *group[K, V]) Do(key K, fn func(key K) (V, error)) (V, error) {
+	g.mu.Lock()
 
-	if c, ok := this.calls[key]; ok {
-		this.mu.Unlock()
+	if c, ok := g.calls[key]; ok {
+		g.mu.Unlock()
 		c.w.Wait()
 
 		if err, ok := c.err.(*stackError); ok {
@@ -58,23 +58,23 @@ func (this *group[K, V]) Do(key K, fn func(key K) (V, error)) (V, error) {
 	var c = &call[V]{}
 	c.valid = true
 	c.w.Add(1)
-	this.calls[key] = c
-	this.mu.Unlock()
+	g.calls[key] = c
+	g.mu.Unlock()
 
-	this.do(key, c, fn)
+	g.do(key, c, fn)
 
 	return c.value, c.err
 }
 
-func (this *group[K, V]) do(key K, c *call[V], fn func(key K) (V, error)) {
+func (g *group[K, V]) do(key K, c *call[V], fn func(key K) (V, error)) {
 	defer func() {
 		c.w.Done()
 
-		this.mu.Lock()
+		g.mu.Lock()
 		if c.valid {
-			delete(this.calls, key)
+			delete(g.calls, key)
 		}
-		this.mu.Unlock()
+		g.mu.Unlock()
 
 		if err, ok := c.err.(*stackError); ok {
 			panic(err)
@@ -90,11 +90,11 @@ func (this *group[K, V]) do(key K, c *call[V], fn func(key K) (V, error)) {
 	c.value, c.err = fn(key)
 }
 
-func (this *group[K, V]) Forget(key K) {
-	this.mu.Lock()
-	if c, ok := this.calls[key]; ok {
+func (g *group[K, V]) Forget(key K) {
+	g.mu.Lock()
+	if c, ok := g.calls[key]; ok {
 		c.valid = false
-		delete(this.calls, key)
+		delete(g.calls, key)
 	}
-	this.mu.Unlock()
+	g.mu.Unlock()
 }
